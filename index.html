@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Usage Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Claude Usage Monitor</h1>
+            <p class="subtitle">Monitorea el uso semanal de tus cuentas Claude</p>
+        </header>
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <h3>Total Disponible</h3>
+                    <p class="stat-value" id="totalAvailable">300%</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✓</div>
+                <div class="stat-content">
+                    <h3>Mejor Cuenta</h3>
+                    <p class="stat-value" id="bestAccount">Cuenta 1</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-content">
+                    <h3>Promedio Restante</h3>
+                    <p class="stat-value" id="averageRemaining">100%</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="accounts-grid">
+            <!-- Account 1 -->
+            <div class="account-card">
+                <div class="account-header">
+                    <h2>Cuenta 1</h2>
+                    <span class="account-status" id="status1">Disponible</span>
+                </div>
+                <div class="input-group">
+                    <label for="usage1">Uso Semanal (%)</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="usage1" min="0" max="100" value="0" placeholder="0">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress1"></div>
+                    </div>
+                    <div class="progress-labels">
+                        <span>Usado: <strong id="used1">0%</strong></span>
+                        <span>Restante: <strong id="remaining1">100%</strong></span>
+                    </div>
+                </div>
+                <div class="account-footer">
+                    <p class="remaining-text" id="remainingText1">100% disponible</p>
+                </div>
+            </div>
+
+            <!-- Account 2 -->
+            <div class="account-card">
+                <div class="account-header">
+                    <h2>Cuenta 2</h2>
+                    <span class="account-status" id="status2">Disponible</span>
+                </div>
+                <div class="input-group">
+                    <label for="usage2">Uso Semanal (%)</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="usage2" min="0" max="100" value="0" placeholder="0">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress2"></div>
+                    </div>
+                    <div class="progress-labels">
+                        <span>Usado: <strong id="used2">0%</strong></span>
+                        <span>Restante: <strong id="remaining2">100%</strong></span>
+                    </div>
+                </div>
+                <div class="account-footer">
+                    <p class="remaining-text" id="remainingText2">100% disponible</p>
+                </div>
+            </div>
+
+            <!-- Account 3 -->
+            <div class="account-card">
+                <div class="account-header">
+                    <h2>Cuenta 3</h2>
+                    <span class="account-status" id="status3">Disponible</span>
+                </div>
+                <div class="input-group">
+                    <label for="usage3">Uso Semanal (%)</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="usage3" min="0" max="100" value="0" placeholder="0">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress3"></div>
+                    </div>
+                    <div class="progress-labels">
+                        <span>Usado: <strong id="used3">0%</strong></span>
+                        <span>Restante: <strong id="remaining3">100%</strong></span>
+                    </div>
+                </div>
+                <div class="account-footer">
+                    <p class="remaining-text" id="remainingText3">100% disponible</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" id="saveBtn">Guardar Datos</button>
+            <button class="btn btn-secondary" id="resetBtn">Resetear Todo</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
