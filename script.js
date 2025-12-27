@@ -38,24 +38,33 @@ function updateAccount(accountNum) {
     const input = document.getElementById(`usage${accountNum}`);
     let usage = parseFloat(input.value) || 0;
 
+    // Check if x2 mode is active
+    const isX2Mode = document.body.classList.contains('x2-mode');
+    const maxUsage = isX2Mode ? 200 : 100;
+
     // Validate input
     if (usage < 0) usage = 0;
-    if (usage > 100) usage = 100;
+    if (usage > maxUsage) usage = maxUsage;
     input.value = usage;
 
     const remaining = 100 - usage;
 
     // Update progress bar
     const progressFill = document.getElementById(`progress${accountNum}`);
-    progressFill.style.width = `${usage}%`;
+    // Cap the visual width at 100% even if usage is higher
+    const visualWidth = Math.min(usage, 100);
+    progressFill.style.width = `${visualWidth}%`;
 
-    // Update gradient based on usage
+    // Update gradient based on usage (using actual usage for color determination)
     if (usage < 50) {
         progressFill.style.background = 'linear-gradient(90deg, #10b981, #059669)';
     } else if (usage < 80) {
         progressFill.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
-    } else {
+    } else if (usage < 100) {
         progressFill.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+    } else {
+        // Over 100% - special color to indicate over-usage
+        progressFill.style.background = 'linear-gradient(90deg, #dc2626, #991b1b)';
     }
 
     // Update labels
@@ -64,7 +73,10 @@ function updateAccount(accountNum) {
 
     // Update status badge
     const status = document.getElementById(`status${accountNum}`);
-    if (remaining > 50) {
+    if (usage > 100) {
+        status.textContent = 'Excedido';
+        status.className = 'account-status danger';
+    } else if (remaining > 50) {
         status.textContent = 'Disponible';
         status.className = 'account-status';
     } else if (remaining > 20) {
@@ -77,13 +89,18 @@ function updateAccount(accountNum) {
 
     // Update remaining text
     const remainingText = document.getElementById(`remainingText${accountNum}`);
-    remainingText.textContent = `${remaining}% disponible`;
-    if (remaining > 50) {
-        remainingText.className = 'remaining-text';
-    } else if (remaining > 20) {
-        remainingText.className = 'remaining-text warning';
-    } else {
+    if (remaining < 0) {
+        remainingText.textContent = `Excedido por ${Math.abs(remaining)}%`;
         remainingText.className = 'remaining-text danger';
+    } else {
+        remainingText.textContent = `${remaining}% disponible`;
+        if (remaining > 50) {
+            remainingText.className = 'remaining-text';
+        } else if (remaining > 20) {
+            remainingText.className = 'remaining-text warning';
+        } else {
+            remainingText.className = 'remaining-text danger';
+        }
     }
 
     // Update x2 mode indicators
@@ -106,14 +123,18 @@ function updateX2Indicators(accountNum, usage, remaining) {
 
     // Update x2 remaining text
     const remainingTextX2 = document.getElementById(`remainingTextX2${accountNum}`);
-    remainingTextX2.textContent = `${remainingX2.toFixed(1)}% disponible (con límite x2)`;
-
-    if (remainingX2 > 75) {
-        remainingTextX2.className = 'remaining-text-x2';
-    } else if (remainingX2 > 50) {
-        remainingTextX2.className = 'remaining-text-x2 warning';
-    } else {
+    if (remainingX2 < 0) {
+        remainingTextX2.textContent = `Excedido por ${Math.abs(remainingX2).toFixed(1)}% (con límite x2)`;
         remainingTextX2.className = 'remaining-text-x2 danger';
+    } else {
+        remainingTextX2.textContent = `${remainingX2.toFixed(1)}% disponible (con límite x2)`;
+        if (remainingX2 > 75) {
+            remainingTextX2.className = 'remaining-text-x2';
+        } else if (remainingX2 > 50) {
+            remainingTextX2.className = 'remaining-text-x2 warning';
+        } else {
+            remainingTextX2.className = 'remaining-text-x2 danger';
+        }
     }
 }
 
@@ -272,10 +293,27 @@ function toggleX2Mode(event) {
 
     if (isX2Mode) {
         document.body.classList.add('x2-mode');
-        showNotification('Modo límite x2 activado', 'success');
+        // Update input max to 200 and placeholder
+        ACCOUNTS.forEach(num => {
+            const input = document.getElementById(`usage${num}`);
+            input.setAttribute('max', '200');
+            input.setAttribute('placeholder', '0-200');
+        });
+        showNotification('Modo límite x2 activado - Máximo 200%', 'success');
     } else {
         document.body.classList.remove('x2-mode');
-        showNotification('Modo límite normal activado', 'success');
+        // Update input max back to 100 and placeholder
+        ACCOUNTS.forEach(num => {
+            const input = document.getElementById(`usage${num}`);
+            input.setAttribute('max', '100');
+            input.setAttribute('placeholder', '0');
+            // If current value is over 100, reset it
+            if (parseFloat(input.value) > 100) {
+                input.value = 100;
+                updateAccount(num);
+            }
+        });
+        showNotification('Modo límite normal activado - Máximo 100%', 'success');
     }
 
     // Save preference
@@ -292,6 +330,12 @@ function loadX2Mode() {
 
     if (isX2Mode) {
         document.body.classList.add('x2-mode');
+        // Set input max to 200 and placeholder
+        ACCOUNTS.forEach(num => {
+            const input = document.getElementById(`usage${num}`);
+            input.setAttribute('max', '200');
+            input.setAttribute('placeholder', '0-200');
+        });
     }
 }
 
