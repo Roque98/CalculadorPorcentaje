@@ -141,18 +141,30 @@ header h1 {
     display: none;
 }
 
-body.x2-mode .stat-value {
-    display: none;
-}
-
 body.x2-mode .stat-value-x2 {
     display: block;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--border);
+}
+
+body.x2-mode .stat-value-x2::before {
+    content: "Con x2: ";
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 0.25rem;
+    background: none;
+    -webkit-text-fill-color: var(--text-secondary);
 }
 
 body.x2-mode .progress-labels-x2 {
@@ -169,16 +181,15 @@ body.x2-mode .progress-labels-x2 strong {
     color: var(--accent-primary);
 }
 
-body.x2-mode .remaining-text {
-    display: none;
-}
-
 body.x2-mode .remaining-text-x2 {
     display: block;
     text-align: center;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--accent-primary);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
 }
 
 body.x2-mode .remaining-text-x2.warning {
