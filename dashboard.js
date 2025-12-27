@@ -30,6 +30,12 @@ function loadAccountNames() {
     }
 }
 
+// Get account name helper
+function getAccountName(accountNum) {
+    const key = `account${accountNum}`;
+    return accountNames[key] || `Cuenta ${accountNum}`;
+}
+
 // Setup event listeners
 function setupEventListeners() {
     document.getElementById('timeRange').addEventListener('change', renderDashboard);
@@ -126,7 +132,7 @@ function updateStats(data) {
     const avgUsage = totalUsage.map(total => total / data.length);
     const maxAvg = Math.max(...avgUsage);
     const mostUsedIndex = avgUsage.indexOf(maxAvg);
-    document.getElementById('mostUsedAccount').textContent = `Cuenta ${mostUsedIndex + 1} (${maxAvg.toFixed(1)}%)`;
+    document.getElementById('mostUsedAccount').textContent = `${getAccountName(mostUsedIndex + 1)} (${maxAvg.toFixed(1)}%)`;
 }
 
 // Format date
@@ -253,7 +259,7 @@ function renderUsageChart(data) {
             labels: labels,
             datasets: [
                 {
-                    label: 'Cuenta 1',
+                    label: getAccountName(1),
                     data: data.map(p => processData(p.account1)),
                     borderColor: '#8b5cf6',
                     backgroundColor: 'rgba(139, 92, 246, 0.1)',
@@ -261,7 +267,7 @@ function renderUsageChart(data) {
                     fill: true
                 },
                 {
-                    label: 'Cuenta 2',
+                    label: getAccountName(2),
                     data: data.map(p => processData(p.account2)),
                     borderColor: '#6366f1',
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -269,7 +275,7 @@ function renderUsageChart(data) {
                     fill: true
                 },
                 {
-                    label: 'Cuenta 3',
+                    label: getAccountName(3),
                     data: data.map(p => processData(p.account3)),
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -348,7 +354,7 @@ function renderAverageChart(data) {
     charts.average = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Cuenta 1', 'Cuenta 2', 'Cuenta 3'],
+            labels: [getAccountName(1), getAccountName(2), getAccountName(3)],
             datasets: [{
                 label: 'Uso Promedio (%)',
                 data: [avg1, avg2, avg3],
@@ -414,7 +420,7 @@ function renderDistributionChart(data) {
     charts.distribution = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Cuenta 1', 'Cuenta 2', 'Cuenta 3'],
+            labels: [getAccountName(1), getAccountName(2), getAccountName(3)],
             datasets: [{
                 data: [
                     processData(lastDataPoint.account1),
@@ -478,7 +484,7 @@ function renderRemainingChart(data) {
     charts.remaining = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Cuenta 1', 'Cuenta 2', 'Cuenta 3'],
+            labels: [getAccountName(1), getAccountName(2), getAccountName(3)],
             datasets: [
                 {
                     label: 'Usado',
