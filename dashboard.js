@@ -1,15 +1,34 @@
 // Constants
 const HISTORY_KEY = 'claude_usage_history';
+const NAMES_KEY = 'claude_account_names';
 let charts = {};
 let historyData = [];
 let isX2Mode = false;
+let accountNames = {};
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
+    loadAccountNames();
     loadHistory();
     setupEventListeners();
     renderDashboard();
 });
+
+// Load account names
+function loadAccountNames() {
+    const savedNames = localStorage.getItem(NAMES_KEY);
+    if (savedNames) {
+        try {
+            accountNames = JSON.parse(savedNames);
+            // Update UI with custom names
+            document.getElementById('account1Name').textContent = accountNames.account1 || 'Cuenta 1';
+            document.getElementById('account2Name').textContent = accountNames.account2 || 'Cuenta 2';
+            document.getElementById('account3Name').textContent = accountNames.account3 || 'Cuenta 3';
+        } catch (error) {
+            console.error('Error loading account names:', error);
+        }
+    }
+}
 
 // Setup event listeners
 function setupEventListeners() {
@@ -57,6 +76,7 @@ function renderDashboard() {
     const filteredData = filterDataByTimeRange(historyData, timeRange);
 
     updateStats(filteredData);
+    renderWeekComparison();
     renderCharts(filteredData);
 }
 
@@ -118,6 +138,89 @@ function formatDate(date) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+// Render week comparison
+function renderWeekComparison() {
+    const now = new Date();
+    const currentWeekStart = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const prevWeekStart = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
+    const prevWeekEnd = currentWeekStart;
+
+    // Filter data for current and previous week
+    const currentWeekData = historyData.filter(point => {
+        const date = new Date(point.timestamp);
+        return date >= currentWeekStart && date <= now;
+    });
+
+    const prevWeekData = historyData.filter(point => {
+        const date = new Date(point.timestamp);
+        return date >= prevWeekStart && date < prevWeekEnd;
+    });
+
+    // Hide comparison if not enough data
+    if (currentWeekData.length === 0 && prevWeekData.length === 0) {
+        document.getElementById('weekComparison').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('weekComparison').style.display = 'block';
+
+    // Calculate averages for each account
+    for (let i = 1; i <= 3; i++) {
+        const accountKey = `account${i}`;
+
+        // Current week average
+        let currentAvg = 0;
+        if (currentWeekData.length > 0) {
+            const currentSum = currentWeekData.reduce((sum, point) => sum + point[accountKey], 0);
+            currentAvg = currentSum / currentWeekData.length;
+        }
+
+        // Previous week average
+        let prevAvg = 0;
+        if (prevWeekData.length > 0) {
+            const prevSum = prevWeekData.reduce((sum, point) => sum + point[accountKey], 0);
+            prevAvg = prevSum / prevWeekData.length;
+        }
+
+        // Apply x2 mode if enabled
+        const processData = (value) => isX2Mode ? value / 2 : value;
+        currentAvg = processData(currentAvg);
+        prevAvg = processData(prevAvg);
+
+        // Calculate difference
+        const diff = currentAvg - prevAvg;
+        const diffPercent = prevAvg > 0 ? ((diff / prevAvg) * 100) : 0;
+
+        // Update UI
+        document.getElementById(`currentWeek${i}`).textContent = currentWeekData.length > 0 ? `${currentAvg.toFixed(1)}%` : '-';
+        document.getElementById(`prevWeek${i}`).textContent = prevWeekData.length > 0 ? `${prevAvg.toFixed(1)}%` : '-';
+
+        // Update arrow and difference
+        const arrow = document.getElementById(`arrow${i}`);
+        const diffElement = document.getElementById(`diff${i}`);
+
+        if (currentWeekData.length > 0 && prevWeekData.length > 0) {
+            if (diff > 0) {
+                arrow.textContent = '↗';
+                arrow.style.color = '#ef4444'; // Red for increase (bad)
+                diffElement.innerHTML = `<span class="diff-label">Diferencia:</span> <span class="diff-value increase">+${diff.toFixed(1)}% (+${Math.abs(diffPercent).toFixed(1)}%)</span>`;
+            } else if (diff < 0) {
+                arrow.textContent = '↘';
+                arrow.style.color = '#10b981'; // Green for decrease (good)
+                diffElement.innerHTML = `<span class="diff-label">Diferencia:</span> <span class="diff-value decrease">${diff.toFixed(1)}% (${diffPercent.toFixed(1)}%)</span>`;
+            } else {
+                arrow.textContent = '→';
+                arrow.style.color = '#a1a1aa';
+                diffElement.innerHTML = `<span class="diff-label">Diferencia:</span> <span class="diff-value">Sin cambios</span>`;
+            }
+        } else {
+            arrow.textContent = '→';
+            arrow.style.color = '#a1a1aa';
+            diffElement.innerHTML = `<span class="diff-label">Diferencia:</span> <span class="diff-value">-</span>`;
+        }
+    }
 }
 
 // Render charts

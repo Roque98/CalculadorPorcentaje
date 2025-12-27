@@ -3,10 +3,17 @@ const ACCOUNTS = [1, 2, 3];
 const STORAGE_KEY = 'claude_usage_data';
 const X2_MODE_KEY = 'claude_x2_mode';
 const HISTORY_KEY = 'claude_usage_history';
+const NAMES_KEY = 'claude_account_names';
 let lastSavedValues = {};
+let accountNames = {
+    account1: 'Cuenta 1',
+    account2: 'Cuenta 2',
+    account3: 'Cuenta 3'
+};
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
+    loadAccountNames();
     loadData();
     loadX2Mode();
     setupEventListeners();
@@ -127,7 +134,7 @@ function updateOverviewStats() {
     // Best account (highest remaining)
     const maxRemaining = Math.max(...remainings);
     const bestAccountIndex = remainings.indexOf(maxRemaining);
-    const bestAccountText = `Cuenta ${bestAccountIndex + 1} (${maxRemaining.toFixed(0)}%)`;
+    const bestAccountText = `${getAccountName(bestAccountIndex + 1)} (${maxRemaining.toFixed(0)}%)`;
     document.getElementById('bestAccount').textContent = bestAccountText;
 
     // Average remaining
@@ -145,7 +152,7 @@ function updateOverviewStats() {
     // Best account x2
     const maxRemainingX2 = Math.max(...remainingsX2);
     const bestAccountIndexX2 = remainingsX2.indexOf(maxRemainingX2);
-    const bestAccountTextX2 = `Cuenta ${bestAccountIndexX2 + 1} (${maxRemainingX2.toFixed(1)}%)`;
+    const bestAccountTextX2 = `${getAccountName(bestAccountIndexX2 + 1)} (${maxRemainingX2.toFixed(1)}%)`;
     document.getElementById('bestAccountX2').textContent = bestAccountTextX2;
 
     // Average remaining x2
@@ -286,6 +293,55 @@ function loadX2Mode() {
     if (isX2Mode) {
         document.body.classList.add('x2-mode');
     }
+}
+
+// Load account names
+function loadAccountNames() {
+    const savedNames = localStorage.getItem(NAMES_KEY);
+    if (savedNames) {
+        try {
+            accountNames = JSON.parse(savedNames);
+        } catch (error) {
+            console.error('Error loading account names:', error);
+        }
+    }
+
+    // Update UI with loaded names
+    ACCOUNTS.forEach(num => {
+        const nameElement = document.getElementById(`accountName${num}`);
+        if (nameElement) {
+            nameElement.textContent = accountNames[`account${num}`];
+        }
+    });
+}
+
+// Save account names
+function saveAccountNames() {
+    localStorage.setItem(NAMES_KEY, JSON.stringify(accountNames));
+}
+
+// Edit account name
+function editAccountName(accountNum) {
+    const currentName = accountNames[`account${accountNum}`];
+    const newName = prompt(`Ingresa un nuevo nombre para ${currentName}:`, currentName);
+
+    if (newName && newName.trim() !== '') {
+        accountNames[`account${accountNum}`] = newName.trim();
+        saveAccountNames();
+
+        // Update UI
+        document.getElementById(`accountName${accountNum}`).textContent = newName.trim();
+
+        // Update overview stats
+        updateOverviewStats();
+
+        showNotification('Nombre actualizado correctamente', 'success');
+    }
+}
+
+// Get account name
+function getAccountName(accountNum) {
+    return accountNames[`account${accountNum}`] || `Cuenta ${accountNum}`;
 }
 
 // Show notification (simple version)
