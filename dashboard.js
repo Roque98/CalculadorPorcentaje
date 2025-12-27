@@ -251,8 +251,7 @@ function renderUsageChart(data) {
         return date.toLocaleDateString('es-ES', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'});
     });
 
-    const processData = (value) => isX2Mode ? value / 2 : value;
-
+    // In x2 mode, don't process data, show raw values
     charts.usage = new Chart(ctx, {
         type: 'line',
         data: {
@@ -260,7 +259,7 @@ function renderUsageChart(data) {
             datasets: [
                 {
                     label: getAccountName(1),
-                    data: data.map(p => processData(p.account1)),
+                    data: data.map(p => p.account1),
                     borderColor: '#8b5cf6',
                     backgroundColor: 'rgba(139, 92, 246, 0.1)',
                     tension: 0.4,
@@ -268,7 +267,7 @@ function renderUsageChart(data) {
                 },
                 {
                     label: getAccountName(2),
-                    data: data.map(p => processData(p.account2)),
+                    data: data.map(p => p.account2),
                     borderColor: '#6366f1',
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
                     tension: 0.4,
@@ -276,7 +275,7 @@ function renderUsageChart(data) {
                 },
                 {
                     label: getAccountName(3),
-                    data: data.map(p => processData(p.account3)),
+                    data: data.map(p => p.account3),
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     tension: 0.4,
@@ -314,7 +313,7 @@ function renderUsageChart(data) {
                 },
                 y: {
                     beginAtZero: true,
-                    max: 100,
+                    max: isX2Mode ? 200 : 100,
                     ticks: {
                         color: '#a1a1aa',
                         callback: function(value) {
@@ -338,8 +337,6 @@ function renderAverageChart(data) {
         charts.average.destroy();
     }
 
-    const processData = (value) => isX2Mode ? value / 2 : value;
-
     let avg1 = 0, avg2 = 0, avg3 = 0;
     data.forEach(point => {
         avg1 += point.account1;
@@ -347,9 +344,9 @@ function renderAverageChart(data) {
         avg3 += point.account3;
     });
 
-    avg1 = processData(avg1 / data.length);
-    avg2 = processData(avg2 / data.length);
-    avg3 = processData(avg3 / data.length);
+    avg1 = avg1 / data.length;
+    avg2 = avg2 / data.length;
+    avg3 = avg3 / data.length;
 
     charts.average = new Chart(ctx, {
         type: 'bar',
@@ -390,7 +387,7 @@ function renderAverageChart(data) {
                 },
                 y: {
                     beginAtZero: true,
-                    max: 100,
+                    max: isX2Mode ? 200 : 100,
                     ticks: {
                         color: '#a1a1aa',
                         callback: function(value) {
@@ -415,7 +412,6 @@ function renderDistributionChart(data) {
     }
 
     const lastDataPoint = data[data.length - 1];
-    const processData = (value) => isX2Mode ? value / 2 : value;
 
     charts.distribution = new Chart(ctx, {
         type: 'doughnut',
@@ -423,9 +419,9 @@ function renderDistributionChart(data) {
             labels: [getAccountName(1), getAccountName(2), getAccountName(3)],
             datasets: [{
                 data: [
-                    processData(lastDataPoint.account1),
-                    processData(lastDataPoint.account2),
-                    processData(lastDataPoint.account3)
+                    lastDataPoint.account1,
+                    lastDataPoint.account2,
+                    lastDataPoint.account3
                 ],
                 backgroundColor: [
                     'rgba(139, 92, 246, 0.8)',
@@ -475,11 +471,11 @@ function renderRemainingChart(data) {
     }
 
     const lastDataPoint = data[data.length - 1];
-    const processData = (value) => isX2Mode ? value / 2 : value;
+    const maxCapacity = isX2Mode ? 200 : 100;
 
-    const remaining1 = 100 - processData(lastDataPoint.account1);
-    const remaining2 = 100 - processData(lastDataPoint.account2);
-    const remaining3 = 100 - processData(lastDataPoint.account3);
+    const remaining1 = Math.max(0, maxCapacity - lastDataPoint.account1);
+    const remaining2 = Math.max(0, maxCapacity - lastDataPoint.account2);
+    const remaining3 = Math.max(0, maxCapacity - lastDataPoint.account3);
 
     charts.remaining = new Chart(ctx, {
         type: 'bar',
@@ -489,9 +485,9 @@ function renderRemainingChart(data) {
                 {
                     label: 'Usado',
                     data: [
-                        processData(lastDataPoint.account1),
-                        processData(lastDataPoint.account2),
-                        processData(lastDataPoint.account3)
+                        lastDataPoint.account1,
+                        lastDataPoint.account2,
+                        lastDataPoint.account3
                     ],
                     backgroundColor: 'rgba(239, 68, 68, 0.6)',
                     borderColor: '#ef4444',
@@ -529,7 +525,7 @@ function renderRemainingChart(data) {
                 y: {
                     stacked: true,
                     beginAtZero: true,
-                    max: 100,
+                    max: maxCapacity,
                     ticks: {
                         color: '#a1a1aa',
                         callback: function(value) {

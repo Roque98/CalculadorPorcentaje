@@ -10,6 +10,7 @@ let accountNames = {
     account2: 'Cuenta 2',
     account3: 'Cuenta 3'
 };
+let autoSaveTimeout = null;
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,29 +52,32 @@ function updateAccount(accountNum) {
 
     // Update progress bar
     const progressFill = document.getElementById(`progress${accountNum}`);
-    // Cap the visual width at 100% even if usage is higher
-    const visualWidth = Math.min(usage, 100);
+    // In x2 mode, scale to 200%, otherwise 100%
+    const visualWidth = isX2Mode ? (usage / 200 * 100) : Math.min(usage, 100);
     progressFill.style.width = `${visualWidth}%`;
 
-    // Update gradient based on usage (using actual usage for color determination)
-    if (usage < 50) {
+    // Update gradient based on usage - thresholds adapt to x2 mode
+    const threshold1 = isX2Mode ? 100 : 50;  // Green threshold
+    const threshold2 = isX2Mode ? 160 : 80;  // Yellow threshold
+    const threshold3 = isX2Mode ? 200 : 100; // Red threshold
+
+    if (usage < threshold1) {
         progressFill.style.background = 'linear-gradient(90deg, #10b981, #059669)';
-    } else if (usage < 80) {
+    } else if (usage < threshold2) {
         progressFill.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
-    } else if (usage < 100) {
-        progressFill.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
     } else {
-        // Over 100% - special color to indicate over-usage
-        progressFill.style.background = 'linear-gradient(90deg, #dc2626, #991b1b)';
+        progressFill.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
     }
 
     // Update labels
     document.getElementById(`used${accountNum}`).textContent = `${usage}%`;
     document.getElementById(`remaining${accountNum}`).textContent = `${remaining}%`;
 
-    // Update status badge
+    // Update status badge - adapt to x2 mode
     const status = document.getElementById(`status${accountNum}`);
-    if (usage > 100) {
+    const exceedThreshold = isX2Mode ? 200 : 100;
+
+    if (usage > exceedThreshold) {
         status.textContent = 'Excedido';
         status.className = 'account-status danger';
     } else if (remaining > 50) {
@@ -82,8 +86,11 @@ function updateAccount(accountNum) {
     } else if (remaining > 20) {
         status.textContent = 'Moderado';
         status.className = 'account-status warning';
-    } else {
+    } else if (remaining >= 0) {
         status.textContent = 'Crítico';
+        status.className = 'account-status danger';
+    } else {
+        status.textContent = 'Excedido';
         status.className = 'account-status danger';
     }
 
@@ -108,6 +115,9 @@ function updateAccount(accountNum) {
 
     // Update overview stats
     updateOverviewStats();
+
+    // Trigger debounced auto-save
+    debouncedAutoSave();
 }
 
 // Update x2 mode indicators
@@ -441,14 +451,22 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Auto-save every 30 seconds
-setInterval(() => {
-    const hasData = ACCOUNTS.some(num => {
-        const value = document.getElementById(`usage${num}`).value;
-        return value && parseFloat(value) > 0;
-    });
-
-    if (hasData) {
-        saveData();
+// Debounced auto-save function
+function debouncedAutoSave() {
+    // Clear existing timeout
+    if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
     }
-}, 30000);
+
+    // Set new timeout - save after 3 seconds of no changes
+    autoSaveTimeout = setTimeout(() => {
+        const hasData = ACCOUNTS.some(num => {
+            const value = document.getElementById(`usage${num}`).value;
+            return value && parseFloat(value) > 0;
+        });
+
+        if (hasData) {
+            saveData();
+        }
+    }, 3000); // Wait 3 seconds after last change
+}
