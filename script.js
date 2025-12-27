@@ -1,10 +1,12 @@
 // Constants
 const ACCOUNTS = [1, 2, 3];
 const STORAGE_KEY = 'claude_usage_data';
+const X2_MODE_KEY = 'claude_x2_mode';
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
+    loadX2Mode();
     setupEventListeners();
     updateAllAccounts();
 });
@@ -18,6 +20,7 @@ function setupEventListeners() {
 
     document.getElementById('saveBtn').addEventListener('click', saveData);
     document.getElementById('resetBtn').addEventListener('click', resetAll);
+    document.getElementById('x2Toggle').addEventListener('change', toggleX2Mode);
 }
 
 // Update individual account
@@ -73,8 +76,35 @@ function updateAccount(accountNum) {
         remainingText.className = 'remaining-text danger';
     }
 
+    // Update x2 mode indicators
+    updateX2Indicators(accountNum, usage, remaining);
+
     // Update overview stats
     updateOverviewStats();
+}
+
+// Update x2 mode indicators
+function updateX2Indicators(accountNum, usage, remaining) {
+    // With x2 limit, the actual usage is half of the normal limit
+    // Example: 50% usage on normal limit = 25% usage on x2 limit
+    const usageX2 = usage / 2;
+    const remainingX2 = 100 - usageX2;
+
+    // Update x2 labels
+    document.getElementById(`usedX2${accountNum}`).textContent = `${usageX2.toFixed(1)}%`;
+    document.getElementById(`remainingX2${accountNum}`).textContent = `${remainingX2.toFixed(1)}%`;
+
+    // Update x2 remaining text
+    const remainingTextX2 = document.getElementById(`remainingTextX2${accountNum}`);
+    remainingTextX2.textContent = `${remainingX2.toFixed(1)}% disponible (con límite x2)`;
+
+    if (remainingX2 > 75) {
+        remainingTextX2.className = 'remaining-text-x2';
+    } else if (remainingX2 > 50) {
+        remainingTextX2.className = 'remaining-text-x2 warning';
+    } else {
+        remainingTextX2.className = 'remaining-text-x2 danger';
+    }
 }
 
 // Update all accounts
@@ -100,6 +130,24 @@ function updateOverviewStats() {
     // Average remaining
     const avgRemaining = totalRemaining / ACCOUNTS.length;
     document.getElementById('averageRemaining').textContent = `${avgRemaining.toFixed(1)}%`;
+
+    // Update x2 mode stats
+    const usagesX2 = usages.map(usage => usage / 2);
+    const remainingsX2 = usagesX2.map(usage => 100 - usage);
+
+    // Total available x2
+    const totalRemainingX2 = remainingsX2.reduce((sum, val) => sum + val, 0);
+    document.getElementById('totalAvailableX2').textContent = `${totalRemainingX2.toFixed(0)}%`;
+
+    // Best account x2
+    const maxRemainingX2 = Math.max(...remainingsX2);
+    const bestAccountIndexX2 = remainingsX2.indexOf(maxRemainingX2);
+    const bestAccountTextX2 = `Cuenta ${bestAccountIndexX2 + 1} (${maxRemainingX2.toFixed(1)}%)`;
+    document.getElementById('bestAccountX2').textContent = bestAccountTextX2;
+
+    // Average remaining x2
+    const avgRemainingX2 = totalRemainingX2 / ACCOUNTS.length;
+    document.getElementById('averageRemainingX2').textContent = `${avgRemainingX2.toFixed(1)}%`;
 }
 
 // Save data to localStorage
@@ -143,6 +191,35 @@ function resetAll() {
         });
         localStorage.removeItem(STORAGE_KEY);
         showNotification('Datos reseteados correctamente', 'success');
+    }
+}
+
+// Toggle x2 mode
+function toggleX2Mode(event) {
+    const isX2Mode = event.target.checked;
+
+    if (isX2Mode) {
+        document.body.classList.add('x2-mode');
+        showNotification('Modo límite x2 activado', 'success');
+    } else {
+        document.body.classList.remove('x2-mode');
+        showNotification('Modo límite normal activado', 'success');
+    }
+
+    // Save preference
+    localStorage.setItem(X2_MODE_KEY, isX2Mode);
+}
+
+// Load x2 mode preference
+function loadX2Mode() {
+    const savedX2Mode = localStorage.getItem(X2_MODE_KEY);
+    const isX2Mode = savedX2Mode === 'true';
+
+    const toggle = document.getElementById('x2Toggle');
+    toggle.checked = isX2Mode;
+
+    if (isX2Mode) {
+        document.body.classList.add('x2-mode');
     }
 }
 

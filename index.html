@@ -11,6 +11,15 @@
         <header>
             <h1>Claude Usage Monitor</h1>
             <p class="subtitle">Monitorea el uso semanal de tus cuentas Claude</p>
+
+            <div class="x2-toggle-container">
+                <span class="toggle-label">Límite x2 activo</span>
+                <label class="switch">
+                    <input type="checkbox" id="x2Toggle">
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-info">Válido hasta 12/31</span>
+            </div>
         </header>
 
         <div class="stats-overview">
@@ -19,6 +28,7 @@
                 <div class="stat-content">
                     <h3>Total Disponible</h3>
                     <p class="stat-value" id="totalAvailable">300%</p>
+                    <p class="stat-value-x2" id="totalAvailableX2">600%</p>
                 </div>
             </div>
             <div class="stat-card">
@@ -26,6 +36,7 @@
                 <div class="stat-content">
                     <h3>Mejor Cuenta</h3>
                     <p class="stat-value" id="bestAccount">Cuenta 1</p>
+                    <p class="stat-value-x2" id="bestAccountX2">Cuenta 1 (100%)</p>
                 </div>
             </div>
             <div class="stat-card">
@@ -33,6 +44,7 @@
                 <div class="stat-content">
                     <h3>Promedio Restante</h3>
                     <p class="stat-value" id="averageRemaining">100%</p>
+                    <p class="stat-value-x2" id="averageRemainingX2">100%</p>
                 </div>
             </div>
         </div>
@@ -59,9 +71,14 @@
                         <span>Usado: <strong id="used1">0%</strong></span>
                         <span>Restante: <strong id="remaining1">100%</strong></span>
                     </div>
+                    <div class="progress-labels-x2" id="progressLabelsX21">
+                        <span>Con x2: <strong id="usedX21">0%</strong></span>
+                        <span>Restante x2: <strong id="remainingX21">100%</strong></span>
+                    </div>
                 </div>
                 <div class="account-footer">
                     <p class="remaining-text" id="remainingText1">100% disponible</p>
+                    <p class="remaining-text-x2" id="remainingTextX21">100% disponible (con límite x2)</p>
                 </div>
             </div>
 
@@ -86,9 +103,14 @@
                         <span>Usado: <strong id="used2">0%</strong></span>
                         <span>Restante: <strong id="remaining2">100%</strong></span>
                     </div>
+                    <div class="progress-labels-x2" id="progressLabelsX22">
+                        <span>Con x2: <strong id="usedX22">0%</strong></span>
+                        <span>Restante x2: <strong id="remainingX22">100%</strong></span>
+                    </div>
                 </div>
                 <div class="account-footer">
                     <p class="remaining-text" id="remainingText2">100% disponible</p>
+                    <p class="remaining-text-x2" id="remainingTextX22">100% disponible (con límite x2)</p>
                 </div>
             </div>
 
@@ -113,9 +135,14 @@
                         <span>Usado: <strong id="used3">0%</strong></span>
                         <span>Restante: <strong id="remaining3">100%</strong></span>
                     </div>
+                    <div class="progress-labels-x2" id="progressLabelsX23">
+                        <span>Con x2: <strong id="usedX23">0%</strong></span>
+                        <span>Restante x2: <strong id="remainingX23">100%</strong></span>
+                    </div>
                 </div>
                 <div class="account-footer">
                     <p class="remaining-text" id="remainingText3">100% disponible</p>
+                    <p class="remaining-text-x2" id="remainingTextX23">100% disponible (con límite x2)</p>
                 </div>
             </div>
         </div>
