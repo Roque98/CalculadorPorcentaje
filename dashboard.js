@@ -1,6 +1,7 @@
 // Constants
 const HISTORY_KEY = 'claude_usage_history';
 const NAMES_KEY = 'claude_account_names';
+const X2_MODE_KEY = 'claude_x2_mode';
 let charts = {};
 let historyData = [];
 let isX2Mode = false;
@@ -9,6 +10,7 @@ let accountNames = {};
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
     loadAccountNames();
+    loadX2Mode();
     loadHistory();
     setupEventListeners();
     renderDashboard();
@@ -34,6 +36,17 @@ function loadAccountNames() {
 function getAccountName(accountNum) {
     const key = `account${accountNum}`;
     return accountNames[key] || `Cuenta ${accountNum}`;
+}
+
+// Load x2 mode preference
+function loadX2Mode() {
+    const savedX2Mode = localStorage.getItem(X2_MODE_KEY);
+    isX2Mode = savedX2Mode === 'true';
+
+    const toggle = document.getElementById('showX2Mode');
+    if (toggle) {
+        toggle.checked = isX2Mode;
+    }
 }
 
 // Setup event listeners
@@ -544,6 +557,10 @@ function renderRemainingChart(data) {
 // Toggle x2 display mode
 function toggleX2Display(event) {
     isX2Mode = event.target.checked;
+
+    // Save preference to localStorage
+    localStorage.setItem(X2_MODE_KEY, isX2Mode);
+
     renderDashboard();
 }
 
