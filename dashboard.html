@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1440, initial-scale=0.3, minimum-scale=0.1, maximum-scale=2.0, user-scalable=yes">
+    <title>Dashboard - Claude Usage Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dashboard Histórico</h1>
+            <p class="subtitle">Visualiza el uso histórico de tus cuentas Claude</p>
+
+            <div class="navigation">
+                <a href="index.html" class="nav-link">
+                    <span>← Monitor Principal</span>
+                </a>
+            </div>
+        </header>
+
+        <div class="dashboard-controls">
+            <div class="control-group">
+                <label for="timeRange">Rango de Tiempo:</label>
+                <select id="timeRange" class="select-input">
+                    <option value="7">Últimos 7 días</option>
+                    <option value="14">Últimos 14 días</option>
+                    <option value="30" selected>Últimos 30 días</option>
+                    <option value="all">Todo el historial</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="showX2Mode" class="checkbox-input">
+                    <span>Mostrar con límite x2</span>
+                </label>
+            </div>
+
+            <button class="btn btn-danger" id="clearHistoryBtn">Limpiar Historial</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card-small">
+                <h3>Total de Registros</h3>
+                <p class="stat-large" id="totalRecords">0</p>
+            </div>
+            <div class="stat-card-small">
+                <h3>Primer Registro</h3>
+                <p class="stat-medium" id="firstRecord">-</p>
+            </div>
+            <div class="stat-card-small">
+                <h3>Último Registro</h3>
+                <p class="stat-medium" id="lastRecord">-</p>
+            </div>
+            <div class="stat-card-small">
+                <h3>Cuenta Más Usada</h3>
+                <p class="stat-medium" id="mostUsedAccount">-</p>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-card">
+                <h2>Uso por Cuenta a lo Largo del Tiempo</h2>
+                <div class="chart-wrapper">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h2>Promedio de Uso por Cuenta</h2>
+                <div class="chart-wrapper">
+                    <canvas id="averageChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h2>Distribución de Uso Actual</h2>
+                <div class="chart-wrapper">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h2>Capacidad Restante</h2>
+                <div class="chart-wrapper">
+                    <canvas id="remainingChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="no-data-message" id="noDataMessage">
+            <div class="no-data-icon">📊</div>
+            <h2>No hay datos históricos disponibles</h2>
+            <p>Comienza a usar el monitor principal para generar datos históricos automáticamente.</p>
+            <a href="index.html" class="btn btn-primary">Ir al Monitor Principal</a>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

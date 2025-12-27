@@ -2,6 +2,8 @@
 const ACCOUNTS = [1, 2, 3];
 const STORAGE_KEY = 'claude_usage_data';
 const X2_MODE_KEY = 'claude_x2_mode';
+const HISTORY_KEY = 'claude_usage_history';
+let lastSavedValues = {};
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
@@ -9,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadX2Mode();
     setupEventListeners();
     updateAllAccounts();
+    initializeLastSavedValues();
 });
 
 // Setup event listeners
@@ -160,8 +163,70 @@ function saveData() {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
+    // Save to history if values changed
+    saveToHistory(data);
+
     // Show feedback
     showNotification('Datos guardados correctamente', 'success');
+}
+
+// Initialize last saved values
+function initializeLastSavedValues() {
+    ACCOUNTS.forEach(accountNum => {
+        const usage = document.getElementById(`usage${accountNum}`).value;
+        lastSavedValues[`account${accountNum}`] = usage;
+    });
+}
+
+// Check if values have changed
+function hasValuesChanged(newData) {
+    for (let key in newData) {
+        if (newData[key] !== lastSavedValues[key]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Save to history only if values changed
+function saveToHistory(data) {
+    if (!hasValuesChanged(data)) {
+        return; // No changes, don't save
+    }
+
+    // Update last saved values
+    lastSavedValues = {...data};
+
+    // Get existing history
+    let history = [];
+    const savedHistory = localStorage.getItem(HISTORY_KEY);
+    if (savedHistory) {
+        try {
+            history = JSON.parse(savedHistory);
+        } catch (error) {
+            console.error('Error loading history:', error);
+            history = [];
+        }
+    }
+
+    // Create new data point
+    const dataPoint = {
+        timestamp: new Date().toISOString(),
+        account1: parseFloat(data.account1) || 0,
+        account2: parseFloat(data.account2) || 0,
+        account3: parseFloat(data.account3) || 0
+    };
+
+    // Add to history
+    history.push(dataPoint);
+
+    // Keep only last 100 data points for efficiency
+    if (history.length > 100) {
+        history = history.slice(-100);
+    }
+
+    // Save history
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
 // Load data from localStorage
