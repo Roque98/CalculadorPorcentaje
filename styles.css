@@ -27,10 +27,12 @@ body {
     min-height: 100vh;
     padding: 2rem;
     line-height: 1.6;
+    overflow-x: auto;
 }
 
 .container {
-    max-width: 1400px;
+    min-width: 1400px;
+    width: 1400px;
     margin: 0 auto;
 }
 
@@ -58,7 +60,7 @@ header h1 {
 
 .stats-overview {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     margin-bottom: 3rem;
 }
@@ -107,7 +109,7 @@ header h1 {
 
 .accounts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 2rem;
     margin-bottom: 2rem;
 }
@@ -316,26 +318,4 @@ header h1 {
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
     opacity: 1;
-}
-
-@media (max-width: 768px) {
-    body {
-        padding: 1rem;
-    }
-
-    header h1 {
-        font-size: 2rem;
-    }
-
-    .accounts-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .actions {
-        flex-direction: column;
-    }
-
-    .btn {
-        width: 100%;
-    }
 }
