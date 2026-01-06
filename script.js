@@ -488,14 +488,21 @@ function removeNeedsUpdateStyling(accountNum) {
 
 // Update time remaining percentage metric
 function updateTimeRemainingMetric(accountNum) {
-    const timePercentageElement = document.getElementById(`timePercentage${accountNum}`);
-    if (!timePercentageElement) return;
+    const timeUsedElement = document.getElementById(`timeUsed${accountNum}`);
+    const timeAvailableElement = document.getElementById(`timeAvailable${accountNum}`);
+    const progressFillElement = document.getElementById(`timeProgressFill${accountNum}`);
+
+    if (!timeUsedElement || !timeAvailableElement || !progressFillElement) return;
 
     const resetData = getResetData(accountNum);
 
     if (!resetData || !resetData.resetDate) {
-        timePercentageElement.textContent = '--';
-        timePercentageElement.className = 'time-percentage';
+        timeUsedElement.textContent = '--';
+        timeAvailableElement.textContent = '--';
+        timeUsedElement.className = 'time-metric-value used';
+        timeAvailableElement.className = 'time-metric-value available';
+        progressFillElement.style.width = '0%';
+        progressFillElement.className = 'time-progress-fill';
         return;
     }
 
@@ -508,28 +515,48 @@ function updateTimeRemainingMetric(accountNum) {
 
     // Calculate total period (7 days) and remaining time in milliseconds
     const totalPeriod = resetDate - startDate;
+    const timeElapsed = now - startDate;
     const timeRemaining = resetDate - now;
 
-    if (timeRemaining <= 0) {
-        // Time expired
-        timePercentageElement.textContent = '0%';
-        timePercentageElement.className = 'time-percentage danger';
-        return;
+    // Calculate percentages
+    let percentageUsed = (timeElapsed / totalPeriod) * 100;
+    let percentageRemaining = (timeRemaining / totalPeriod) * 100;
+
+    // Clamp values between 0 and 100
+    percentageUsed = Math.max(0, Math.min(100, percentageUsed));
+    percentageRemaining = Math.max(0, Math.min(100, percentageRemaining));
+
+    // Update text values
+    timeUsedElement.textContent = `${Math.round(percentageUsed)}%`;
+    timeAvailableElement.textContent = `${Math.round(percentageRemaining)}%`;
+
+    // Update progress bar
+    progressFillElement.style.width = `${percentageUsed}%`;
+
+    // Apply color coding to progress bar based on how much time is used
+    if (percentageUsed < 50) {
+        progressFillElement.className = 'time-progress-fill success';
+    } else if (percentageUsed < 75) {
+        progressFillElement.className = 'time-progress-fill warning';
+    } else {
+        progressFillElement.className = 'time-progress-fill danger';
     }
 
-    // Calculate percentage
-    const percentageRemaining = (timeRemaining / totalPeriod) * 100;
-
-    // Format display
-    timePercentageElement.textContent = `${Math.round(percentageRemaining)}%`;
-
-    // Apply color coding
+    // Apply color coding to time values
     if (percentageRemaining > 50) {
-        timePercentageElement.className = 'time-percentage success';
+        timeAvailableElement.className = 'time-metric-value available success';
     } else if (percentageRemaining > 25) {
-        timePercentageElement.className = 'time-percentage warning';
+        timeAvailableElement.className = 'time-metric-value available warning';
     } else {
-        timePercentageElement.className = 'time-percentage danger';
+        timeAvailableElement.className = 'time-metric-value available danger';
+    }
+
+    if (percentageUsed < 50) {
+        timeUsedElement.className = 'time-metric-value used success';
+    } else if (percentageUsed < 75) {
+        timeUsedElement.className = 'time-metric-value used warning';
+    } else {
+        timeUsedElement.className = 'time-metric-value used danger';
     }
 }
 
