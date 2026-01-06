@@ -4,6 +4,7 @@ const STORAGE_KEY = 'claude_usage_data';
 const X2_MODE_KEY = 'claude_x2_mode';
 const HISTORY_KEY = 'claude_usage_history';
 const NAMES_KEY = 'claude_account_names';
+const RESET_DATES_KEY = 'claude_reset_dates';
 let lastSavedValues = {};
 let accountNames = {
     account1: 'Cuenta 1',
@@ -20,6 +21,29 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     updateAllAccounts();
     initializeLastSavedValues();
+
+    // Load and initialize reset dates
+    ACCOUNTS.forEach(accountNum => {
+        const resetData = getResetData(accountNum);
+        if (resetData && resetData.resetDate) {
+            document.getElementById(`resetDate${accountNum}`).value = resetData.resetDate;
+        }
+        if (resetData && resetData.needsUpdate) {
+            applyNeedsUpdateStyling(accountNum);
+        }
+    });
+
+    // Initialize time remaining metrics
+    updateAllTimeMetrics();
+
+    // Check for pending resets
+    checkAndProcessResets();
+
+    // Set up periodic reset check (every 5 minutes)
+    setInterval(checkAndProcessResets, 5 * 60 * 1000);
+
+    // Update time metrics every minute
+    setInterval(updateAllTimeMetrics, 60 * 1000);
 });
 
 // Setup event listeners
@@ -285,6 +309,43 @@ function loadData() {
     }
 }
 
+// Load reset dates from localStorage
+function loadResetDates() {
+    const savedDates = localStorage.getItem(RESET_DATES_KEY);
+    if (savedDates) {
+        try {
+            return JSON.parse(savedDates);
+        } catch (error) {
+            console.error('Error loading reset dates:', error);
+            return {};
+        }
+    }
+    return {};
+}
+
+// Save reset dates to localStorage
+function saveResetDates(resetDates) {
+    localStorage.setItem(RESET_DATES_KEY, JSON.stringify(resetDates));
+}
+
+// Get reset data for a specific account
+function getResetData(accountNum) {
+    const resetDates = loadResetDates();
+    const accountKey = `account${accountNum}`;
+    return resetDates[accountKey] || { resetDate: null, needsUpdate: false };
+}
+
+// Set needsUpdate flag for a specific account
+function setResetDataNeedsUpdate(accountNum, value) {
+    const resetDates = loadResetDates();
+    const accountKey = `account${accountNum}`;
+    if (!resetDates[accountKey]) {
+        resetDates[accountKey] = { resetDate: null, needsUpdate: false };
+    }
+    resetDates[accountKey].needsUpdate = value;
+    saveResetDates(resetDates);
+}
+
 // Reset all data
 function resetAll() {
     if (confirm('¿Estás seguro de que quieres resetear todos los datos?')) {
@@ -295,6 +356,188 @@ function resetAll() {
         localStorage.removeItem(STORAGE_KEY);
         showNotification('Datos reseteados correctamente', 'success');
     }
+}
+
+// Check and process automatic resets
+function checkAndProcessResets() {
+    const resetDates = loadResetDates();
+    const now = new Date();
+
+    ACCOUNTS.forEach(accountNum => {
+        const accountKey = `account${accountNum}`;
+        const resetData = resetDates[accountKey];
+
+        if (!resetData || !resetData.resetDate || resetData.needsUpdate) {
+            return; // Skip if no date set or already needs update
+        }
+
+        const resetDate = new Date(resetData.resetDate);
+
+        if (now >= resetDate) {
+            performAutoReset(accountNum);
+        }
+    });
+}
+
+// Perform automatic reset for an account
+function performAutoReset(accountNum) {
+    // 1. Reset usage to 0
+    const usageInput = document.getElementById(`usage${accountNum}`);
+    usageInput.value = 0;
+    updateAccount(accountNum);
+
+    // 2. Mark as needing update
+    setResetDataNeedsUpdate(accountNum, true);
+
+    // 3. Apply visual styling
+    applyNeedsUpdateStyling(accountNum);
+
+    // 4. Save data (triggers history save)
+    saveData();
+
+    // 5. Notify user
+    const accountName = getAccountName(accountNum);
+    showNotification(
+        `${accountName} reiniciada automáticamente. Por favor, selecciona una nueva fecha de reinicio.`,
+        'warning'
+    );
+}
+
+// Handle reset date change event
+function onResetDateChange(accountNum) {
+    const dateInput = document.getElementById(`resetDate${accountNum}`);
+    const selectedDate = dateInput.value;
+    const usage = parseFloat(document.getElementById(`usage${accountNum}`).value) || 0;
+
+    // Load current reset dates
+    const resetDates = loadResetDates();
+    const accountKey = `account${accountNum}`;
+
+    if (!selectedDate) {
+        // Date cleared
+        delete resetDates[accountKey];
+        saveResetDates(resetDates);
+        removeNeedsUpdateStyling(accountNum);
+        updateTimeRemainingMetric(accountNum);
+        return;
+    }
+
+    // Validate future date
+    const now = new Date();
+    const resetDate = new Date(selectedDate);
+
+    if (resetDate <= now) {
+        showNotification('Por favor selecciona una fecha y hora futura', 'error');
+        dateInput.value = '';
+        return;
+    }
+
+    // Save reset date
+    if (!resetDates[accountKey]) {
+        resetDates[accountKey] = {};
+    }
+
+    resetDates[accountKey].resetDate = selectedDate;
+
+    // Check if we should clear the needs-update flag
+    if (usage === 0 && resetDates[accountKey].needsUpdate) {
+        resetDates[accountKey].needsUpdate = false;
+        removeNeedsUpdateStyling(accountNum);
+        showNotification('Fecha de reinicio actualizada correctamente', 'success');
+    }
+
+    saveResetDates(resetDates);
+    updateTimeRemainingMetric(accountNum);
+}
+
+// Apply needs-update styling to an account card
+function applyNeedsUpdateStyling(accountNum) {
+    const card = document.getElementById(`usage${accountNum}`).closest('.account-card');
+    const dateGroup = card.querySelector('.reset-date-group');
+    const dateHelper = document.getElementById(`dateHelper${accountNum}`);
+
+    if (card) {
+        card.classList.add('needs-reset-date');
+    }
+    if (dateGroup) {
+        dateGroup.classList.add('needs-update');
+    }
+    if (dateHelper) {
+        dateHelper.classList.add('warning');
+        dateHelper.textContent = '¡Atención! Selecciona una nueva fecha de reinicio';
+    }
+}
+
+// Remove needs-update styling from an account card
+function removeNeedsUpdateStyling(accountNum) {
+    const card = document.getElementById(`usage${accountNum}`).closest('.account-card');
+    const dateGroup = card.querySelector('.reset-date-group');
+    const dateHelper = document.getElementById(`dateHelper${accountNum}`);
+
+    if (card) {
+        card.classList.remove('needs-reset-date');
+    }
+    if (dateGroup) {
+        dateGroup.classList.remove('needs-update');
+    }
+    if (dateHelper) {
+        dateHelper.classList.remove('warning');
+        dateHelper.textContent = 'La cuenta se reiniciará automáticamente en esta fecha y hora';
+    }
+}
+
+// Update time remaining percentage metric
+function updateTimeRemainingMetric(accountNum) {
+    const timePercentageElement = document.getElementById(`timePercentage${accountNum}`);
+    if (!timePercentageElement) return;
+
+    const resetData = getResetData(accountNum);
+
+    if (!resetData || !resetData.resetDate) {
+        timePercentageElement.textContent = '--';
+        timePercentageElement.className = 'time-percentage';
+        return;
+    }
+
+    const now = new Date();
+    const resetDate = new Date(resetData.resetDate);
+
+    // Calculate start date as 7 days before reset date
+    const PERIOD_DAYS = 7;
+    const startDate = new Date(resetDate.getTime() - (PERIOD_DAYS * 24 * 60 * 60 * 1000));
+
+    // Calculate total period (7 days) and remaining time in milliseconds
+    const totalPeriod = resetDate - startDate;
+    const timeRemaining = resetDate - now;
+
+    if (timeRemaining <= 0) {
+        // Time expired
+        timePercentageElement.textContent = '0%';
+        timePercentageElement.className = 'time-percentage danger';
+        return;
+    }
+
+    // Calculate percentage
+    const percentageRemaining = (timeRemaining / totalPeriod) * 100;
+
+    // Format display
+    timePercentageElement.textContent = `${Math.round(percentageRemaining)}%`;
+
+    // Apply color coding
+    if (percentageRemaining > 50) {
+        timePercentageElement.className = 'time-percentage success';
+    } else if (percentageRemaining > 25) {
+        timePercentageElement.className = 'time-percentage warning';
+    } else {
+        timePercentageElement.className = 'time-percentage danger';
+    }
+}
+
+// Update all time remaining metrics
+function updateAllTimeMetrics() {
+    ACCOUNTS.forEach(accountNum => {
+        updateTimeRemainingMetric(accountNum);
+    });
 }
 
 // Toggle x2 mode

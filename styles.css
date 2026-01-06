@@ -434,6 +434,139 @@ body.x2-mode .remaining-text-x2.danger {
     color: var(--danger);
 }
 
+/* Reset Date Group */
+.reset-date-group {
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.reset-date-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.label-icon {
+    font-size: 1rem;
+}
+
+.date-input {
+    width: 100%;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    color-scheme: dark;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+.date-helper-text {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Time Remaining Metric */
+.time-remaining-metric {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.time-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.time-percentage {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.time-percentage.success {
+    color: var(--success);
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.time-percentage.warning {
+    color: var(--warning);
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.time-percentage.danger {
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.15);
+}
+
+/* Warning States for Reset Date */
+.account-card.needs-reset-date {
+    border: 2px solid var(--danger) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+    }
+}
+
+.reset-date-group.needs-update {
+    border: 2px solid var(--danger);
+    border-radius: 12px;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.reset-date-group.needs-update label {
+    color: var(--danger) !important;
+    font-weight: 700;
+}
+
+.reset-date-group.needs-update .date-input {
+    border-color: var(--danger);
+}
+
+.date-helper-text.warning {
+    color: var(--danger);
+    font-weight: 600;
+    font-style: normal;
+}
+
 .actions {
     display: flex;
     gap: 1rem;

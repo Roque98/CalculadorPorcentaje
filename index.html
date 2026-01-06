@@ -65,6 +65,25 @@
                     </div>
                     <span class="account-status" id="status1">Disponible</span>
                 </div>
+                <div class="reset-date-group">
+                    <label for="resetDate1">
+                        <span class="label-icon">📅</span>
+                        Fecha y Hora de Reinicio
+                    </label>
+                    <input
+                        type="datetime-local"
+                        id="resetDate1"
+                        class="date-input"
+                        onchange="onResetDateChange(1)"
+                    >
+                    <p class="date-helper-text" id="dateHelper1">
+                        La cuenta se reiniciará automáticamente en esta fecha y hora
+                    </p>
+                    <div class="time-remaining-metric" id="timeMetric1">
+                        <span class="time-label">Tiempo disponible:</span>
+                        <span class="time-percentage" id="timePercentage1">--</span>
+                    </div>
+                </div>
                 <div class="input-group">
                     <label for="usage1">Uso Semanal (%)</label>
                     <div class="input-wrapper">
@@ -100,6 +119,25 @@
                     </div>
                     <span class="account-status" id="status2">Disponible</span>
                 </div>
+                <div class="reset-date-group">
+                    <label for="resetDate2">
+                        <span class="label-icon">📅</span>
+                        Fecha y Hora de Reinicio
+                    </label>
+                    <input
+                        type="datetime-local"
+                        id="resetDate2"
+                        class="date-input"
+                        onchange="onResetDateChange(2)"
+                    >
+                    <p class="date-helper-text" id="dateHelper2">
+                        La cuenta se reiniciará automáticamente en esta fecha y hora
+                    </p>
+                    <div class="time-remaining-metric" id="timeMetric2">
+                        <span class="time-label">Tiempo disponible:</span>
+                        <span class="time-percentage" id="timePercentage2">--</span>
+                    </div>
+                </div>
                 <div class="input-group">
                     <label for="usage2">Uso Semanal (%)</label>
                     <div class="input-wrapper">
@@ -134,6 +172,25 @@
                         <button class="edit-name-btn" onclick="editAccountName(3)" title="Editar nombre">✏️</button>
                     </div>
                     <span class="account-status" id="status3">Disponible</span>
+                </div>
+                <div class="reset-date-group">
+                    <label for="resetDate3">
+                        <span class="label-icon">📅</span>
+                        Fecha y Hora de Reinicio
+                    </label>
+                    <input
+                        type="datetime-local"
+                        id="resetDate3"
+                        class="date-input"
+                        onchange="onResetDateChange(3)"
+                    >
+                    <p class="date-helper-text" id="dateHelper3">
+                        La cuenta se reiniciará automáticamente en esta fecha y hora
+                    </p>
+                    <div class="time-remaining-metric" id="timeMetric3">
+                        <span class="time-label">Tiempo disponible:</span>
+                        <span class="time-percentage" id="timePercentage3">--</span>
+                    </div>
                 </div>
                 <div class="input-group">
                     <label for="usage3">Uso Semanal (%)</label>
