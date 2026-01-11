@@ -140,6 +140,9 @@ function updateAccount(accountNum) {
     // Update overview stats
     updateOverviewStats();
 
+    // Update time metrics (including balance)
+    updateTimeRemainingMetric(accountNum);
+
     // Trigger debounced auto-save
     debouncedAutoSave();
 }
@@ -486,21 +489,21 @@ function removeNeedsUpdateStyling(accountNum) {
     }
 }
 
-// Update time remaining percentage metric
+// Update time remaining percentage metric and usage balance
 function updateTimeRemainingMetric(accountNum) {
     const timeUsedElement = document.getElementById(`timeUsed${accountNum}`);
-    const timeAvailableElement = document.getElementById(`timeAvailable${accountNum}`);
+    const usageBalanceElement = document.getElementById(`usageBalance${accountNum}`);
     const progressFillElement = document.getElementById(`timeProgressFill${accountNum}`);
 
-    if (!timeUsedElement || !timeAvailableElement || !progressFillElement) return;
+    if (!timeUsedElement || !usageBalanceElement || !progressFillElement) return;
 
     const resetData = getResetData(accountNum);
 
     if (!resetData || !resetData.resetDate) {
         timeUsedElement.textContent = '--';
-        timeAvailableElement.textContent = '--';
+        usageBalanceElement.textContent = '--';
         timeUsedElement.className = 'time-metric-value used';
-        timeAvailableElement.className = 'time-metric-value available';
+        usageBalanceElement.className = 'time-metric-value balance';
         progressFillElement.style.width = '0%';
         progressFillElement.className = 'time-progress-fill';
         return;
@@ -513,47 +516,57 @@ function updateTimeRemainingMetric(accountNum) {
     const PERIOD_DAYS = 7;
     const startDate = new Date(resetDate.getTime() - (PERIOD_DAYS * 24 * 60 * 60 * 1000));
 
-    // Calculate total period (7 days) and remaining time in milliseconds
+    // Calculate total period (7 days) and time elapsed in milliseconds
     const totalPeriod = resetDate - startDate;
     const timeElapsed = now - startDate;
-    const timeRemaining = resetDate - now;
 
-    // Calculate percentages
-    let percentageUsed = (timeElapsed / totalPeriod) * 100;
-    let percentageRemaining = (timeRemaining / totalPeriod) * 100;
+    // Calculate time percentage used (expected usage based on time)
+    let percentageTimeUsed = (timeElapsed / totalPeriod) * 100;
+    percentageTimeUsed = Math.max(0, Math.min(100, percentageTimeUsed));
 
-    // Clamp values between 0 and 100
-    percentageUsed = Math.max(0, Math.min(100, percentageUsed));
-    percentageRemaining = Math.max(0, Math.min(100, percentageRemaining));
+    // Get actual usage from input
+    const usageInput = document.getElementById(`usage${accountNum}`);
+    const actualUsage = parseFloat(usageInput.value) || 0;
 
-    // Update text values
-    timeUsedElement.textContent = `${Math.round(percentageUsed)}%`;
-    timeAvailableElement.textContent = `${Math.round(percentageRemaining)}%`;
+    // Calculate usage balance: actual usage - expected usage
+    // Positive = overusing, Negative = underusing/wasting
+    const usageBalance = actualUsage - percentageTimeUsed;
 
-    // Update progress bar
-    progressFillElement.style.width = `${percentageUsed}%`;
+    // Update time used display
+    timeUsedElement.textContent = `${Math.round(percentageTimeUsed)}%`;
 
-    // Apply color coding to progress bar based on how much time is used
-    if (percentageUsed < 50) {
+    // Update balance display with sign
+    const balanceSign = usageBalance >= 0 ? '+' : '';
+    usageBalanceElement.textContent = `${balanceSign}${Math.round(usageBalance)}%`;
+
+    // Define tolerance zones
+    const TOLERANCE_GREEN = 10;   // ±10%
+    const TOLERANCE_YELLOW = 20;  // ±20%
+
+    // Apply color coding based on balance and tolerance
+    const absBalance = Math.abs(usageBalance);
+
+    if (absBalance <= TOLERANCE_GREEN) {
+        // Within tolerance - Green
+        usageBalanceElement.className = 'time-metric-value balance success';
         progressFillElement.className = 'time-progress-fill success';
-    } else if (percentageUsed < 75) {
+    } else if (absBalance <= TOLERANCE_YELLOW) {
+        // Moderate deviation - Yellow
+        usageBalanceElement.className = 'time-metric-value balance warning';
         progressFillElement.className = 'time-progress-fill warning';
     } else {
+        // High deviation - Red
+        usageBalanceElement.className = 'time-metric-value balance danger';
         progressFillElement.className = 'time-progress-fill danger';
     }
 
-    // Apply color coding to time values
-    if (percentageRemaining > 50) {
-        timeAvailableElement.className = 'time-metric-value available success';
-    } else if (percentageRemaining > 25) {
-        timeAvailableElement.className = 'time-metric-value available warning';
-    } else {
-        timeAvailableElement.className = 'time-metric-value available danger';
-    }
+    // Update progress bar width to show actual time used
+    progressFillElement.style.width = `${percentageTimeUsed}%`;
 
-    if (percentageUsed < 50) {
+    // Apply color coding to time used value
+    if (percentageTimeUsed < 50) {
         timeUsedElement.className = 'time-metric-value used success';
-    } else if (percentageUsed < 75) {
+    } else if (percentageTimeUsed < 75) {
         timeUsedElement.className = 'time-metric-value used warning';
     } else {
         timeUsedElement.className = 'time-metric-value used danger';
