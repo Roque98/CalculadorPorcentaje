@@ -285,11 +285,6 @@ function saveToHistory(data) {
     // Add to history
     history.push(dataPoint);
 
-    // Keep only last 100 data points for efficiency
-    if (history.length > 100) {
-        history = history.slice(-100);
-    }
-
     // Save history
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
