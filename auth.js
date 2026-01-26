@@ -82,16 +82,29 @@ async function signOut() {
  */
 async function getCurrentUser() {
     try {
+        // First check if there's a session
+        const { data: { session } } = await supabaseClient.auth.getSession();
+
+        if (!session) {
+            return null;
+        }
+
         const { data: { user }, error } = await supabaseClient.auth.getUser();
 
         if (error) {
-            console.error('Error getting user:', error);
+            // Don't log "Auth session missing" as error - it's expected when not logged in
+            if (!error.message?.includes('session')) {
+                console.error('Error getting user:', error);
+            }
             return null;
         }
 
         return user;
     } catch (err) {
-        console.error('Error getting user:', err);
+        // Don't log session missing errors
+        if (!err.message?.includes('session')) {
+            console.error('Error getting user:', err);
+        }
         return null;
     }
 }
