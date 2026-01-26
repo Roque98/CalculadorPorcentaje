@@ -1,34 +1,126 @@
 // Constants
-const HISTORY_KEY = 'claude_usage_history';
-const NAMES_KEY = 'claude_account_names';
-const X2_MODE_KEY = 'claude_x2_mode';
 let charts = {};
 let historyData = [];
 let isX2Mode = false;
 let accountNames = {};
+let historyChannel = null;
 
 // Initialize on load
-document.addEventListener('DOMContentLoaded', () => {
-    loadAccountNames();
-    loadX2Mode();
-    loadHistory();
-    setupEventListeners();
-    renderDashboard();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication
+    const authenticated = await requireAuth();
+    if (!authenticated) return;
+
+    // Show loading
+    showLoading(true);
+
+    try {
+        // Setup user UI
+        await setupUserUI();
+
+        // Load data from Supabase
+        await loadAccountNames();
+        await loadX2Mode();
+        await loadHistory();
+
+        setupEventListeners();
+        renderDashboard();
+
+        // Setup realtime subscriptions
+        setupRealtimeSubscriptions();
+
+    } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        showNotification('Error al cargar datos', 'error');
+    } finally {
+        showLoading(false);
+    }
 });
 
-// Load account names
-function loadAccountNames() {
-    const savedNames = localStorage.getItem(NAMES_KEY);
-    if (savedNames) {
-        try {
-            accountNames = JSON.parse(savedNames);
-            // Update UI with custom names
-            document.getElementById('account1Name').textContent = accountNames.account1 || 'Cuenta 1';
-            document.getElementById('account2Name').textContent = accountNames.account2 || 'Cuenta 2';
-            document.getElementById('account3Name').textContent = accountNames.account3 || 'Cuenta 3';
-        } catch (error) {
-            console.error('Error loading account names:', error);
+// Setup user UI
+async function setupUserUI() {
+    const user = await getCurrentUser();
+    if (user) {
+        document.getElementById('userEmail').textContent = user.email;
+    }
+
+    // Logout button
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await signOut();
+        window.location.href = 'login.html';
+    });
+
+    setSyncStatus('synced');
+}
+
+// Setup realtime subscriptions
+function setupRealtimeSubscriptions() {
+    // Subscribe to history changes
+    historyChannel = subscribeToHistoryChanges(async (payload) => {
+        console.log('History change received:', payload);
+        setSyncStatus('syncing');
+
+        // Reload history and re-render
+        await loadHistory();
+        renderDashboard();
+
+        setSyncStatus('synced');
+    });
+}
+
+// Set sync status indicator
+function setSyncStatus(status) {
+    const indicator = document.getElementById('syncIndicator');
+    const text = document.getElementById('syncText');
+
+    indicator.className = 'sync-indicator ' + status;
+
+    switch (status) {
+        case 'synced':
+            text.textContent = 'Sincronizado';
+            break;
+        case 'syncing':
+            text.textContent = 'Sincronizando...';
+            break;
+        case 'error':
+            text.textContent = 'Error de sync';
+            break;
+    }
+}
+
+// Show/hide loading overlay
+function showLoading(show) {
+    let overlay = document.getElementById('loadingOverlay');
+
+    if (show) {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'loadingOverlay';
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = `
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Cargando datos...</div>
+            `;
+            document.body.appendChild(overlay);
         }
+        overlay.style.display = 'flex';
+    } else {
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
+}
+
+// Load account names from Supabase
+async function loadAccountNames() {
+    const settings = await getSettings();
+
+    if (settings?.account_names) {
+        accountNames = settings.account_names;
+        // Update UI with custom names
+        document.getElementById('account1Name').textContent = accountNames.account1 || 'Cuenta 1';
+        document.getElementById('account2Name').textContent = accountNames.account2 || 'Cuenta 2';
+        document.getElementById('account3Name').textContent = accountNames.account3 || 'Cuenta 3';
     }
 }
 
@@ -38,10 +130,10 @@ function getAccountName(accountNum) {
     return accountNames[key] || `Cuenta ${accountNum}`;
 }
 
-// Load x2 mode preference
-function loadX2Mode() {
-    const savedX2Mode = localStorage.getItem(X2_MODE_KEY);
-    isX2Mode = savedX2Mode === 'true';
+// Load x2 mode preference from Supabase
+async function loadX2Mode() {
+    const settings = await getSettings();
+    isX2Mode = settings?.x2_mode || false;
 
     const toggle = document.getElementById('showX2Mode');
     if (toggle) {
@@ -53,20 +145,12 @@ function loadX2Mode() {
 function setupEventListeners() {
     document.getElementById('timeRange').addEventListener('change', renderDashboard);
     document.getElementById('showX2Mode').addEventListener('change', toggleX2Display);
-    document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+    document.getElementById('clearHistoryBtn').addEventListener('click', clearHistoryData);
 }
 
-// Load history from localStorage
-function loadHistory() {
-    const savedHistory = localStorage.getItem(HISTORY_KEY);
-    if (savedHistory) {
-        try {
-            historyData = JSON.parse(savedHistory);
-        } catch (error) {
-            console.error('Error loading history:', error);
-            historyData = [];
-        }
-    }
+// Load history from Supabase
+async function loadHistory() {
+    historyData = await getHistory();
 }
 
 // Filter data by time range
@@ -222,20 +306,20 @@ function renderWeekComparison() {
 
         if (currentWeekData.length > 0 && prevWeekData.length > 0) {
             if (diff > 0) {
-                arrow.textContent = '↗';
+                arrow.textContent = String.fromCharCode(0x2197); // Arrow up-right
                 arrow.style.color = '#ef4444'; // Red for increase (bad)
                 diffElement.innerHTML = `<span class="diff-label">Diferencia:</span> <span class="diff-value increase">+${diff.toFixed(1)}% (+${Math.abs(diffPercent).toFixed(1)}%)</span>`;
             } else if (diff < 0) {
-                arrow.textContent = '↘';
+                arrow.textContent = String.fromCharCode(0x2198); // Arrow down-right
                 arrow.style.color = '#10b981'; // Green for decrease (good)
                 diffElement.innerHTML = `<span class="diff-label">Diferencia:</span> <span class="diff-value decrease">${diff.toFixed(1)}% (${diffPercent.toFixed(1)}%)</span>`;
             } else {
-                arrow.textContent = '→';
+                arrow.textContent = String.fromCharCode(0x2192); // Arrow right
                 arrow.style.color = '#a1a1aa';
                 diffElement.innerHTML = `<span class="diff-label">Diferencia:</span> <span class="diff-value">Sin cambios</span>`;
             }
         } else {
-            arrow.textContent = '→';
+            arrow.textContent = String.fromCharCode(0x2192);
             arrow.style.color = '#a1a1aa';
             diffElement.innerHTML = `<span class="diff-label">Diferencia:</span> <span class="diff-value">-</span>`;
         }
@@ -555,29 +639,48 @@ function renderRemainingChart(data) {
 }
 
 // Toggle x2 display mode
-function toggleX2Display(event) {
+async function toggleX2Display(event) {
     isX2Mode = event.target.checked;
 
-    // Save preference to localStorage
-    localStorage.setItem(X2_MODE_KEY, isX2Mode);
+    // Save preference to Supabase
+    setSyncStatus('syncing');
+    try {
+        await saveSettings({
+            x2_mode: isX2Mode,
+            account_names: accountNames
+        });
+        setSyncStatus('synced');
+    } catch (error) {
+        console.error('Error saving x2 mode:', error);
+        setSyncStatus('error');
+    }
 
     renderDashboard();
 }
 
 // Clear history
-function clearHistory() {
-    if (confirm('¿Estás seguro de que quieres eliminar todo el historial? Esta acción no se puede deshacer.')) {
-        localStorage.removeItem(HISTORY_KEY);
-        historyData = [];
+async function clearHistoryData() {
+    if (confirm('Estas seguro de que quieres eliminar todo el historial? Esta accion no se puede deshacer.')) {
+        setSyncStatus('syncing');
 
-        // Destroy all charts
-        Object.values(charts).forEach(chart => {
-            if (chart) chart.destroy();
-        });
-        charts = {};
+        try {
+            await clearHistory();
+            historyData = [];
 
-        showNoDataMessage();
-        showNotification('Historial eliminado correctamente', 'success');
+            // Destroy all charts
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            charts = {};
+
+            showNoDataMessage();
+            showNotification('Historial eliminado correctamente', 'success');
+            setSyncStatus('synced');
+        } catch (error) {
+            console.error('Error clearing history:', error);
+            showNotification('Error al eliminar historial', 'error');
+            setSyncStatus('error');
+        }
     }
 }
 
@@ -585,11 +688,16 @@ function clearHistory() {
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.textContent = message;
+
+    let bgColor = '#10b981';
+    if (type === 'error') bgColor = '#ef4444';
+    if (type === 'warning') bgColor = '#f59e0b';
+
     notification.style.cssText = `
         position: fixed;
         top: 2rem;
         right: 2rem;
-        background: ${type === 'success' ? '#10b981' : '#ef4444'};
+        background: ${bgColor};
         color: white;
         padding: 1rem 2rem;
         border-radius: 12px;

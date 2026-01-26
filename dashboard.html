@@ -5,11 +5,22 @@
     <meta name="viewport" content="width=1440, initial-scale=0.3, minimum-scale=0.1, maximum-scale=2.0, user-scalable=yes">
     <title>Dashboard - Claude Usage Monitor</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
+            <div class="user-bar">
+                <div class="sync-indicator" id="syncIndicator" title="Estado de sincronizacion">
+                    <span class="sync-icon">&#x2601;</span>
+                    <span class="sync-text" id="syncText">Sincronizado</span>
+                </div>
+                <div class="user-info">
+                    <span class="user-email" id="userEmail">Cargando...</span>
+                    <button class="btn-logout" id="logoutBtn" title="Cerrar sesion">Salir</button>
+                </div>
+            </div>
             <h1>Dashboard Histórico</h1>
             <p class="subtitle">Visualiza el uso histórico de tus cuentas Claude</p>
 
@@ -162,6 +173,8 @@
         </div>
     </div>
 
+    <script src="supabase.js"></script>
+    <script src="auth.js"></script>
     <script src="dashboard.js"></script>
 </body>
 </html>

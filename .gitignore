@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# User data files
+localstorage-backup.json
+import-data.sql
+
+# Temporary files
+tmpclaude-*
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local

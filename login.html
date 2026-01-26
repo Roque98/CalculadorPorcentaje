@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Claude Usage Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="login.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>Claude Usage Monitor</h1>
+                <p class="subtitle">Inicia sesion para sincronizar tus datos</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="login">Iniciar Sesion</button>
+                <button class="tab-btn" data-tab="register">Registrarse</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form active">
+                <div class="form-group">
+                    <label for="loginEmail">Correo electronico</label>
+                    <input type="email" id="loginEmail" required placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Contrasena</label>
+                    <input type="password" id="loginPassword" required placeholder="Tu contrasena">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <span class="btn-text">Iniciar Sesion</span>
+                    <span class="btn-loading" style="display: none;">Cargando...</span>
+                </button>
+                <div class="form-footer">
+                    <a href="#" id="forgotPasswordLink">Olvidaste tu contrasena?</a>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="registerEmail">Correo electronico</label>
+                    <input type="email" id="registerEmail" required placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Contrasena</label>
+                    <input type="password" id="registerPassword" required minlength="6" placeholder="Minimo 6 caracteres">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirmar contrasena</label>
+                    <input type="password" id="confirmPassword" required minlength="6" placeholder="Repite tu contrasena">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <span class="btn-text">Crear Cuenta</span>
+                    <span class="btn-loading" style="display: none;">Creando...</span>
+                </button>
+            </form>
+
+            <!-- Forgot Password Form -->
+            <form id="forgotPasswordForm" class="auth-form">
+                <p class="form-description">
+                    Ingresa tu correo electronico y te enviaremos un enlace para restablecer tu contrasena.
+                </p>
+                <div class="form-group">
+                    <label for="resetEmail">Correo electronico</label>
+                    <input type="email" id="resetEmail" required placeholder="tu@email.com">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <span class="btn-text">Enviar Enlace</span>
+                    <span class="btn-loading" style="display: none;">Enviando...</span>
+                </button>
+                <div class="form-footer">
+                    <a href="#" id="backToLoginLink">Volver al inicio de sesion</a>
+                </div>
+            </form>
+
+            <!-- Messages -->
+            <div id="messageContainer" class="message-container" style="display: none;">
+                <p id="messageText"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="supabase.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        // DOM Elements
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const messageContainer = document.getElementById('messageContainer');
+        const messageText = document.getElementById('messageText');
+
+        // Check if already authenticated
+        document.addEventListener('DOMContentLoaded', async () => {
+            await redirectIfAuthenticated();
+        });
+
+        // Tab switching
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+
+                // Update active tab
+                tabButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Show corresponding form
+                document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+
+                if (tab === 'login') {
+                    loginForm.classList.add('active');
+                } else if (tab === 'register') {
+                    registerForm.classList.add('active');
+                }
+
+                // Hide messages
+                hideMessage();
+            });
+        });
+
+        // Forgot password link
+        document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+            forgotPasswordForm.classList.add('active');
+            document.querySelector('.tabs').style.display = 'none';
+            hideMessage();
+        });
+
+        // Back to login link
+        document.getElementById('backToLoginLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+            loginForm.classList.add('active');
+            document.querySelector('.tabs').style.display = 'flex';
+            tabButtons[0].classList.add('active');
+            tabButtons[1].classList.remove('active');
+            hideMessage();
+        });
+
+        // Login form submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            setLoading(loginForm, true);
+
+            const result = await signIn(email, password);
+
+            setLoading(loginForm, false);
+
+            if (result.success) {
+                showMessage('Inicio de sesion exitoso. Redirigiendo...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } else {
+                showMessage(translateError(result.error), 'error');
+            }
+        });
+
+        // Register form submission
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage();
+
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showMessage('Las contrasenas no coinciden', 'error');
+                return;
+            }
+
+            setLoading(registerForm, true);
+
+            const result = await signUp(email, password);
+
+            setLoading(registerForm, false);
+
+            if (result.success) {
+                if (result.emailConfirmationRequired) {
+                    showMessage('Cuenta creada. Por favor revisa tu correo para confirmar tu cuenta.', 'success');
+                } else {
+                    showMessage('Cuenta creada exitosamente. Redirigiendo...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
+            } else {
+                showMessage(translateError(result.error), 'error');
+            }
+        });
+
+        // Forgot password form submission
+        forgotPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage();
+
+            const email = document.getElementById('resetEmail').value;
+
+            setLoading(forgotPasswordForm, true);
+
+            const result = await resetPassword(email);
+
+            setLoading(forgotPasswordForm, false);
+
+            if (result.success) {
+                showMessage('Se ha enviado un enlace de recuperacion a tu correo', 'success');
+            } else {
+                showMessage(translateError(result.error), 'error');
+            }
+        });
+
+        // Helper functions
+        function showMessage(message, type) {
+            messageContainer.style.display = 'block';
+            messageContainer.className = `message-container ${type}`;
+            messageText.textContent = message;
+        }
+
+        function hideMessage() {
+            messageContainer.style.display = 'none';
+        }
+
+        function setLoading(form, loading) {
+            const btn = form.querySelector('button[type="submit"]');
+            const btnText = btn.querySelector('.btn-text');
+            const btnLoading = btn.querySelector('.btn-loading');
+
+            btn.disabled = loading;
+            btnText.style.display = loading ? 'none' : 'inline';
+            btnLoading.style.display = loading ? 'inline' : 'none';
+        }
+
+        function translateError(error) {
+            const translations = {
+                'Invalid login credentials': 'Credenciales invalidas',
+                'Email not confirmed': 'Correo no confirmado. Revisa tu bandeja de entrada.',
+                'User already registered': 'Este correo ya esta registrado',
+                'Password should be at least 6 characters': 'La contrasena debe tener al menos 6 caracteres',
+                'Unable to validate email address: invalid format': 'Formato de correo invalido',
+                'Email rate limit exceeded': 'Demasiados intentos. Intenta mas tarde.'
+            };
+
+            return translations[error] || error;
+        }
+    </script>
+</body>
+</html>
