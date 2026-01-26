@@ -851,41 +851,73 @@ function generateEfficiencyReports() {
 function generateCycleStats() {
     const container = document.getElementById('cycleStats');
 
-    // Calculate average usage per 7-day cycle
+    // Calculate actual consumption per 7-day cycle, handling resets
     const cycles = [];
     let cycleStart = null;
-    let cycleUsage = 0;
+    let cycleConsumption = 0;
+    let prevData = null;
 
     historyData.forEach((h, i) => {
         const date = new Date(h.timestamp);
 
         if (!cycleStart) {
             cycleStart = date;
-            cycleUsage = h.account1 + h.account2 + h.account3;
+            cycleConsumption = 0;
+            prevData = h;
         } else {
+            // Calculate actual consumption (positive changes only, handling resets)
+            [1, 2, 3].forEach(num => {
+                const key = `account${num}`;
+                const prev = prevData[key];
+                const curr = h[key];
+
+                // If current < prev by a lot (>20%), it's likely a reset - don't count
+                // If current > prev, that's actual consumption
+                if (curr > prev) {
+                    cycleConsumption += (curr - prev);
+                }
+            });
+
             const daysDiff = (date - cycleStart) / (1000 * 60 * 60 * 24);
 
             if (daysDiff >= 7) {
                 cycles.push({
                     start: cycleStart,
-                    usage: (h.account1 + h.account2 + h.account3) - cycleUsage
+                    usage: cycleConsumption
                 });
                 cycleStart = date;
-                cycleUsage = h.account1 + h.account2 + h.account3;
+                cycleConsumption = 0;
             }
+
+            prevData = h;
         }
     });
 
-    const avgCycleUsage = cycles.length > 0
-        ? cycles.reduce((sum, c) => sum + c.usage, 0) / cycles.length
+    // Add partial current cycle if exists
+    if (cycleStart && cycleConsumption > 0) {
+        const daysSinceCycleStart = (new Date() - cycleStart) / (1000 * 60 * 60 * 24);
+        if (daysSinceCycleStart >= 1) {
+            // Extrapolate to 7 days for comparison
+            const extrapolated = (cycleConsumption / daysSinceCycleStart) * 7;
+            cycles.push({
+                start: cycleStart,
+                usage: extrapolated,
+                partial: true
+            });
+        }
+    }
+
+    const completeCycles = cycles.filter(c => !c.partial);
+    const avgCycleUsage = completeCycles.length > 0
+        ? completeCycles.reduce((sum, c) => sum + c.usage, 0) / completeCycles.length
         : 0;
 
-    const maxCycle = cycles.length > 0
-        ? Math.max(...cycles.map(c => c.usage))
+    const maxCycle = completeCycles.length > 0
+        ? Math.max(...completeCycles.map(c => c.usage))
         : 0;
 
-    const minCycle = cycles.length > 0
-        ? Math.min(...cycles.map(c => c.usage))
+    const minCycle = completeCycles.length > 0
+        ? Math.min(...completeCycles.map(c => c.usage))
         : 0;
 
     container.innerHTML = `
@@ -902,8 +934,8 @@ function generateCycleStats() {
             <span class="cycle-value">${minCycle.toFixed(0)}%</span>
         </div>
         <div class="cycle-item">
-            <span class="cycle-label">Ciclos analizados</span>
-            <span class="cycle-value">${cycles.length}</span>
+            <span class="cycle-label">Ciclos completos analizados</span>
+            <span class="cycle-value">${completeCycles.length}</span>
         </div>
     `;
 }
@@ -911,8 +943,8 @@ function generateCycleStats() {
 function generateWasteStats() {
     const container = document.getElementById('wasteStats');
 
-    // Estimate waste: capacity not used before resets
-    // We'll use current remaining capacity and days to reset
+    // Estimate waste: capacity that won't be used before resets
+    // Based on projected usage vs remaining capacity
 
     const html = [1, 2, 3].map(num => {
         const key = `account${num}`;
@@ -922,17 +954,30 @@ function generateWasteStats() {
 
         let waste = 0;
         let wasteClass = 'low';
+        let wasteText = '';
 
         if (resetDate) {
             const daysToReset = Math.max(0, (resetDate - new Date()) / (1000 * 60 * 60 * 24));
             const dailyRate = calculateDailyRateForAccount(num);
 
-            if (dailyRate > 0) {
+            if (dailyRate > 0.5) {
+                // Only calculate waste if there's meaningful usage rate
                 const projectedUse = dailyRate * daysToReset;
                 waste = Math.max(0, remaining - projectedUse);
+                wasteText = `${waste.toFixed(0)}%`;
+            } else if (daysToReset < 1) {
+                // Reset is imminent, remaining is waste
+                waste = remaining;
+                wasteText = `${waste.toFixed(0)}%`;
             } else {
-                waste = remaining; // If not using, all remaining is potential waste
+                // No significant usage rate, can't predict
+                waste = 0;
+                wasteText = 'Sin datos';
             }
+        } else {
+            // No reset date set
+            waste = 0;
+            wasteText = 'Sin fecha';
         }
 
         if (waste > 30) wasteClass = 'high';
@@ -942,10 +987,10 @@ function generateWasteStats() {
             <div class="waste-item">
                 <div class="waste-header">
                     <span class="waste-account">${accountNames[key]}</span>
-                    <span class="waste-percent ${wasteClass}">${waste.toFixed(0)}%</span>
+                    <span class="waste-percent ${wasteClass}">${wasteText}</span>
                 </div>
                 <div class="waste-bar">
-                    <div class="waste-fill ${wasteClass}" style="width: ${waste}%"></div>
+                    <div class="waste-fill ${wasteClass}" style="width: ${Math.min(100, waste)}%"></div>
                 </div>
             </div>
         `;
@@ -1032,13 +1077,23 @@ function calculateAverageDailyConsumption() {
     const lastDate = new Date(historyData[historyData.length - 1].timestamp);
     const days = Math.max(1, (lastDate - firstDate) / (1000 * 60 * 60 * 24));
 
-    const totalChange = [1, 2, 3].reduce((sum, num) => {
-        const first = historyData[0][`account${num}`];
-        const last = historyData[historyData.length - 1][`account${num}`];
-        return sum + Math.max(0, last - first);
-    }, 0);
+    // Sum all positive changes (actual consumption), handling resets
+    let totalConsumption = 0;
 
-    return totalChange / days / 3; // Average per account per day
+    for (let i = 1; i < historyData.length; i++) {
+        [1, 2, 3].forEach(num => {
+            const key = `account${num}`;
+            const prev = historyData[i - 1][key];
+            const curr = historyData[i][key];
+
+            // Only count positive changes (actual usage)
+            if (curr > prev) {
+                totalConsumption += (curr - prev);
+            }
+        });
+    }
+
+    return totalConsumption / days / 3; // Average per account per day
 }
 
 function calculateEfficiencyScore() {
@@ -1070,23 +1125,48 @@ function calculateDailyRateForAccount(accountNum, days = 7, offset = 0) {
 
     if (filtered.length < 2) return 0;
 
-    const first = filtered[0][`account${accountNum}`];
-    const last = filtered[filtered.length - 1][`account${accountNum}`];
+    // Calculate actual consumption by summing positive changes (handling resets)
+    let totalConsumption = 0;
+    const key = `account${accountNum}`;
+
+    for (let i = 1; i < filtered.length; i++) {
+        const prev = filtered[i - 1][key];
+        const curr = filtered[i][key];
+
+        // Only count positive changes (actual usage)
+        // Negative changes (resets) are ignored
+        if (curr > prev) {
+            totalConsumption += (curr - prev);
+        }
+    }
+
     const daysDiff = (new Date(filtered[filtered.length - 1].timestamp) - new Date(filtered[0].timestamp)) / (1000 * 60 * 60 * 24);
 
     if (daysDiff <= 0) return 0;
 
-    return Math.max(0, (last - first) / daysDiff);
+    return totalConsumption / daysDiff;
 }
 
 function calculateTotalUsageChange(data) {
     if (data.length < 2) return 0;
 
-    return [1, 2, 3].reduce((sum, num) => {
-        const first = data[0][`account${num}`];
-        const last = data[data.length - 1][`account${num}`];
-        return sum + Math.max(0, last - first);
-    }, 0);
+    // Sum all positive changes (actual consumption), handling resets
+    let total = 0;
+
+    for (let i = 1; i < data.length; i++) {
+        [1, 2, 3].forEach(num => {
+            const key = `account${num}`;
+            const prev = data[i - 1][key];
+            const curr = data[i][key];
+
+            // Only count positive changes (actual usage)
+            if (curr > prev) {
+                total += (curr - prev);
+            }
+        });
+    }
+
+    return total;
 }
 
 function calculateUtilizationScore() {
