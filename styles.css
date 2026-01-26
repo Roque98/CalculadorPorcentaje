@@ -709,6 +709,10 @@ input[type="number"]::-webkit-outer-spin-button {
 /* Navigation */
 .navigation {
     margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 .nav-link {

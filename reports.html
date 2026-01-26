@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Reportes - Claude Usage Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="reports.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="user-bar">
+                <div class="sync-indicator" id="syncIndicator" title="Estado de sincronizacion">
+                    <span class="sync-icon">&#x2601;</span>
+                    <span class="sync-text" id="syncText">Sincronizado</span>
+                </div>
+                <div class="user-info">
+                    <span class="user-email" id="userEmail">Cargando...</span>
+                    <button class="btn-logout" id="logoutBtn" title="Cerrar sesion">Salir</button>
+                </div>
+            </div>
+            <h1>Reportes de Uso</h1>
+            <p class="subtitle">Analiza tu consumo y optimiza el uso de tus cuentas</p>
+
+            <div class="navigation">
+                <a href="index.html" class="nav-link">
+                    <span>← Monitor Principal</span>
+                </a>
+                <a href="dashboard.html" class="nav-link">
+                    <span>Dashboard Histórico →</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- Quick Stats -->
+        <section class="report-section">
+            <h2 class="section-title">Resumen Rápido</h2>
+            <div class="quick-stats-grid">
+                <div class="quick-stat-card recommended">
+                    <div class="quick-stat-icon">🎯</div>
+                    <div class="quick-stat-content">
+                        <h3>Cuenta Recomendada</h3>
+                        <p class="quick-stat-value" id="recommendedAccount">-</p>
+                        <p class="quick-stat-detail" id="recommendedReason">Calculando...</p>
+                    </div>
+                </div>
+                <div class="quick-stat-card">
+                    <div class="quick-stat-icon">⚡</div>
+                    <div class="quick-stat-content">
+                        <h3>Consumo Promedio Diario</h3>
+                        <p class="quick-stat-value" id="avgDailyConsumption">-</p>
+                        <p class="quick-stat-detail">Por cuenta</p>
+                    </div>
+                </div>
+                <div class="quick-stat-card">
+                    <div class="quick-stat-icon">📊</div>
+                    <div class="quick-stat-content">
+                        <h3>Eficiencia General</h3>
+                        <p class="quick-stat-value" id="efficiencyScore">-</p>
+                        <p class="quick-stat-detail" id="efficiencyDetail">Calculando...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alerts Section -->
+        <section class="report-section" id="alertsSection">
+            <h2 class="section-title">⚠️ Alertas Predictivas</h2>
+            <div class="alerts-container" id="alertsContainer">
+                <p class="no-alerts">Analizando datos...</p>
+            </div>
+        </section>
+
+        <!-- Consumption Reports -->
+        <section class="report-section">
+            <h2 class="section-title">📈 Reportes de Consumo</h2>
+            <div class="reports-grid">
+                <!-- Daily Average -->
+                <div class="report-card">
+                    <h3>Consumo Diario Promedio</h3>
+                    <div class="report-content">
+                        <div class="account-stats" id="dailyAverageStats"></div>
+                    </div>
+                </div>
+
+                <!-- Depletion Projection -->
+                <div class="report-card">
+                    <h3>Proyección de Agotamiento</h3>
+                    <div class="report-content">
+                        <div class="account-stats" id="depletionStats"></div>
+                    </div>
+                </div>
+
+                <!-- Days Remaining -->
+                <div class="report-card">
+                    <h3>Días Restantes</h3>
+                    <div class="report-content">
+                        <div class="account-stats" id="daysRemainingStats"></div>
+                    </div>
+                </div>
+
+                <!-- Consumption Speed -->
+                <div class="report-card">
+                    <h3>Velocidad de Consumo</h3>
+                    <div class="report-content">
+                        <div class="account-stats" id="consumptionSpeedStats"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pattern Reports -->
+        <section class="report-section">
+            <h2 class="section-title">🔄 Reportes de Patrones</h2>
+            <div class="reports-grid">
+                <!-- Peak Hours -->
+                <div class="report-card wide">
+                    <h3>Horas Pico de Uso</h3>
+                    <div class="report-content">
+                        <div class="chart-container">
+                            <canvas id="peakHoursChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day of Week -->
+                <div class="report-card wide">
+                    <h3>Uso por Día de la Semana</h3>
+                    <div class="report-content">
+                        <div class="chart-container">
+                            <canvas id="dayOfWeekChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rotation Pattern -->
+                <div class="report-card">
+                    <h3>Patrón de Rotación</h3>
+                    <div class="report-content">
+                        <div class="rotation-stats" id="rotationStats"></div>
+                    </div>
+                </div>
+
+                <!-- Intensive Usage -->
+                <div class="report-card">
+                    <h3>Rachas de Uso Intenso</h3>
+                    <div class="report-content">
+                        <div class="streaks-list" id="streaksList"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Optimization Reports -->
+        <section class="report-section">
+            <h2 class="section-title">🎯 Reportes de Optimización</h2>
+            <div class="reports-grid">
+                <!-- Optimal Balance -->
+                <div class="report-card">
+                    <h3>Balance Óptimo Sugerido</h3>
+                    <div class="report-content">
+                        <div class="balance-suggestion" id="balanceSuggestion"></div>
+                    </div>
+                </div>
+
+                <!-- Account Recommendation -->
+                <div class="report-card">
+                    <h3>Recomendación de Uso</h3>
+                    <div class="report-content">
+                        <div class="recommendation-detail" id="recommendationDetail"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparative Reports -->
+        <section class="report-section">
+            <h2 class="section-title">📊 Reportes Comparativos</h2>
+            <div class="reports-grid">
+                <!-- Week vs Week -->
+                <div class="report-card">
+                    <h3>Semana Actual vs Anterior</h3>
+                    <div class="report-content">
+                        <div class="comparison-stats" id="weekComparisonStats"></div>
+                    </div>
+                </div>
+
+                <!-- Month vs Month -->
+                <div class="report-card">
+                    <h3>Mes Actual vs Anterior</h3>
+                    <div class="report-content">
+                        <div class="comparison-stats" id="monthComparisonStats"></div>
+                    </div>
+                </div>
+
+                <!-- 30 Day Trend -->
+                <div class="report-card wide">
+                    <h3>Tendencia de 30 Días</h3>
+                    <div class="report-content">
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Efficiency Reports -->
+        <section class="report-section">
+            <h2 class="section-title">💡 Reportes de Eficiencia</h2>
+            <div class="reports-grid">
+                <!-- Usage per Cycle -->
+                <div class="report-card">
+                    <h3>Uso por Ciclo (7 días)</h3>
+                    <div class="report-content">
+                        <div class="cycle-stats" id="cycleStats"></div>
+                    </div>
+                </div>
+
+                <!-- Waste Report -->
+                <div class="report-card">
+                    <h3>Desperdicio por Reset</h3>
+                    <div class="report-content">
+                        <div class="waste-stats" id="wasteStats"></div>
+                    </div>
+                </div>
+
+                <!-- Efficiency Score -->
+                <div class="report-card wide">
+                    <h3>Score de Eficiencia Detallado</h3>
+                    <div class="report-content">
+                        <div class="efficiency-breakdown" id="efficiencyBreakdown"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- No Data Message -->
+        <div class="no-data-message" id="noDataMessage">
+            <div class="no-data-icon">📊</div>
+            <h2>No hay suficientes datos históricos</h2>
+            <p>Necesitas al menos unos días de uso para generar reportes significativos.</p>
+            <a href="index.html" class="btn btn-primary">Ir al Monitor Principal</a>
+        </div>
+    </div>
+
+    <script src="supabase.js"></script>
+    <script src="auth.js"></script>
+    <script src="reports.js"></script>
+</body>
+</html>
