@@ -190,8 +190,6 @@ function setupEventListeners() {
         input.addEventListener('input', () => updateAccount(accountNum));
     });
 
-    document.getElementById('saveBtn').addEventListener('click', saveData);
-    document.getElementById('resetBtn').addEventListener('click', resetAll);
     document.getElementById('x2Toggle').addEventListener('change', toggleX2Mode);
 }
 
@@ -466,31 +464,6 @@ async function getResetData(accountNum) {
     };
 }
 
-// Reset all data
-async function resetAll() {
-    if (confirm('Estas seguro de que quieres resetear todos los datos?')) {
-        setSyncStatus('syncing');
-
-        ACCOUNTS.forEach(accountNum => {
-            document.getElementById(`usage${accountNum}`).value = 0;
-            updateAccount(accountNum);
-        });
-
-        try {
-            await saveAllAccounts({
-                account1: 0,
-                account2: 0,
-                account3: 0
-            });
-            showNotification('Datos reseteados correctamente', 'success');
-            setSyncStatus('synced');
-        } catch (error) {
-            console.error('Error resetting data:', error);
-            showNotification('Error al resetear datos', 'error');
-            setSyncStatus('error');
-        }
-    }
-}
 
 // Check and process automatic resets
 async function checkAndProcessResets() {
