@@ -8,6 +8,17 @@ let accountNames = {
 };
 let autoSaveTimeout = null;
 let accountsChannel = null;
+
+// Convert UTC ISO string to local datetime-local input format
+function toLocalDateTimeString(isoString) {
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
 let settingsChannel = null;
 let isX2Mode = false;
 
@@ -94,7 +105,7 @@ function setupRealtimeSubscriptions() {
             if (payload.new.reset_date) {
                 const dateInput = document.getElementById(`resetDate${accountNum}`);
                 if (dateInput) {
-                    dateInput.value = payload.new.reset_date.slice(0, 16);
+                    dateInput.value = toLocalDateTimeString(payload.new.reset_date);
                 }
             }
 
@@ -440,8 +451,8 @@ async function loadResetDates() {
             if (account.reset_date) {
                 const dateInput = document.getElementById(`resetDate${accountNum}`);
                 if (dateInput) {
-                    // Format for datetime-local input
-                    dateInput.value = account.reset_date.slice(0, 16);
+                    // Format for datetime-local input (convert UTC to local)
+                    dateInput.value = toLocalDateTimeString(account.reset_date);
                 }
             }
 
@@ -555,7 +566,7 @@ async function onResetDateChange(accountNum) {
 
     await saveAccount(accountNum, {
         usage_percent: usage,
-        reset_date: selectedDate,
+        reset_date: new Date(selectedDate).toISOString(),
         needs_update: shouldClearNeedsUpdate ? false : needsUpdate
     });
 
